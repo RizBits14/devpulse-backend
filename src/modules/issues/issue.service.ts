@@ -91,4 +91,43 @@ const getAllIssuesFromDB = async (query: IssueQuery): Promise<IssueWithReporter[
     })
 }
 
-export const issueService = { createIssueIntoDB, getAllIssuesFromDB }
+const getSingleIssueFromDB = async (
+    issueId: number
+): Promise<IssueWithReporter | null> => {
+    const issueResult = await pool.query<Issue>(`
+        SELECT id, title, description, type, status, reporter_id, created_at, updated_at
+        FROM issues
+        WHERE id = $1
+        `, [issueId])
+
+    const issue = issueResult.rows[0]
+
+    if (!issue) {
+        return null
+    }
+
+    const reporterResult = await pool.query<Reporter>(`
+        SELECT id, name, role
+        FROM users
+        WHERE id = $1
+        `, [issue.reporter_id])
+
+    const reporter = reporterResult.rows[0]
+
+    if (!reporter) {
+        throw new Error(`Reporter not found for issue ${issue.id}`)
+    }
+
+    return {
+        id: issue.id,
+        title: issue.title,
+        description: issue.description,
+        type: issue.type,
+        status: issue.status,
+        reporter,
+        created_at: issue.created_at,
+        updated_at: issue.updated_at,
+    };
+};
+
+export const issueService = { createIssueIntoDB, getAllIssuesFromDB, getSingleIssueFromDB }

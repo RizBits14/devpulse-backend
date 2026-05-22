@@ -6,6 +6,8 @@ const router = Router()
 
 router.get('/', issueController.getAllIssues)
 
+router.get('/:id', issueController.getSingleIssue)
+
 router.post('/', auth(['contributor', 'maintainer']), issueController.createIssue)
 
 export const issueRoutes = router
