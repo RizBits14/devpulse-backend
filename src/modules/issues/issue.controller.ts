@@ -311,4 +311,39 @@ const updateIssue = async (req: Request, res: Response): Promise<void> => {
     }
 }
 
-export const issueController = { createIssue, getAllIssues, getSingleIssue, updateIssue }
+const deleteIssue = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const issueId = Number(req.params.id)
+
+        if (!Number.isInteger(issueId) || issueId <= 0) {
+            res.status(400).json({
+                success: false,
+                message: 'Issue id must be a valid positive number'
+            })
+            return
+        }
+
+        const isDeleted = await issueService.deleteIssueFromDB(issueId);
+
+        if (!isDeleted) {
+            res.status(404).json({
+                success: false,
+                message: 'Issue not found'
+            })
+            return
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Issue deleted successfully'
+        })
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Issue deletion failed',
+            errors: error instanceof Error ? error.message : 'Unknown error'
+        })
+    }
+}
+
+export const issueController = { createIssue, getAllIssues, getSingleIssue, updateIssue, deleteIssue }

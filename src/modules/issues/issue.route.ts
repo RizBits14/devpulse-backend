@@ -12,4 +12,6 @@ router.post('/', auth(['contributor', 'maintainer']), issueController.createIssu
 
 router.patch('/:id', auth(['contributor', 'maintainer']), issueController.updateIssue)
 
+router.delete('/:id', auth(['maintainer']), issueController.deleteIssue)
+
 export const issueRoutes = router

@@ -185,4 +185,14 @@ const updateIssueIntoDB = async (
     return issue;
 }
 
-export const issueService = { createIssueIntoDB, getAllIssuesFromDB, getSingleIssueFromDB, getRawIssueByIdFromDB, updateIssueIntoDB }
+const deleteIssueFromDB = async (issueId: number): Promise<boolean> => {
+    const result = await pool.query(`
+        DELETE FROM issues
+        WHERE id = $1
+        RETURNING id
+        `, [issueId]);
+
+    return (result.rowCount ?? 0) > 0;
+};
+
+export const issueService = { createIssueIntoDB, getAllIssuesFromDB, getSingleIssueFromDB, getRawIssueByIdFromDB, updateIssueIntoDB, deleteIssueFromDB }
