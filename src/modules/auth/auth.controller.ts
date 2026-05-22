@@ -1,67 +1,72 @@
 import type { Request, Response } from "express";
+import sendErrorResponse from "../../utils/sendErrorResponse";
+import sendResponse from "../../utils/sendResponse";
 import { authService } from "./auth.service";
 
 const signupUser = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { name, email, password, role } = req.body
+        const { name, email, password, role } = req.body || {}
+
         if (!name || !email || !password) {
-            res.status(400).json({
-                success: false,
-                message: "Name, email and password are required"
-            })
+            sendErrorResponse(res, 400, 'Name, email and password are required')
             return
         }
+
         if (role && role !== 'contributor' && role !== 'maintainer') {
-            res.status(400).json({
-                success: false,
-                message: "Role must be contributor or maintainer"
-            })
+            sendErrorResponse(res, 400, 'Role must be contributor or maintainer')
             return
         }
-        const user = await authService.createUserIntoDB(
-            { name, email, password, role }
-        )
-        res.status(201).json({
+
+        const payload =
+            role !== undefined
+                ? { name, email, password, role }
+                : { name, email, password }
+
+        const user = await authService.createUserIntoDB(payload)
+
+        sendResponse(res, {
+            statusCode: 201,
             success: true,
-            message: 'User registration has been done successfully',
-            data: user
+            message: 'User registered successfully',
+            data: user,
         })
     } catch (error) {
-        res.status(400).json({
-            success: false,
-            message: 'User registration has been failed',
-            errors: error instanceof Error ? error.message : "Unknown error"
-        })
+        sendErrorResponse(
+            res,
+            400,
+            'User registration failed',
+            error instanceof Error ? error.message : 'Unknown error'
+        )
     }
 }
 
 const loginUser = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { email, password } = req.body
+        const { email, password } = req.body || {}
 
         if (!email || !password) {
-            res.status(400).json({
-                success: false,
-                message: 'Email and password are required'
-            })
+            sendErrorResponse(res, 400, 'Email and password are required')
             return
         }
 
         const result = await authService.loginUserFromDB({
-            email, password
+            email,
+            password,
         })
 
-        res.status(200).json({
+        sendResponse(res, {
+            statusCode: 200,
             success: true,
             message: 'Login successful',
-            data: result
+            data: result,
         })
     } catch (error) {
-        res.status(401).json({
-            success: false,
-            message: 'Login failed',
-            errors: error instanceof Error ? error.message : 'Unknown error'
-        })
+        sendErrorResponse(
+            res,
+            401,
+            'Login failed',
+            error instanceof Error ? error.message : 'Unknown error'
+        )
     }
 }
 

@@ -1,5 +1,6 @@
 import { config } from "../../config";
 import { pool } from "../../db";
+import getSingleRow from "../../utils/getSingleRow";
 import type { LoginPayload, SafeUser, SignupPayload, UserWithPassword } from "./auth.interface";
 import bcrypt from "bcrypt"
 import jwt, { type SignOptions } from "jsonwebtoken";
@@ -14,11 +15,8 @@ const createUserIntoDB = async (payload: SignupPayload): Promise<SafeUser> => {
         RETURNING id, name, email, role, created_at, updated_at
         `, [name, email, hashedPassword, role])
 
-    const user = result.rows[0]
+    const user = getSingleRow(result.rows, 'User registration failed')
 
-    if (!user) {
-        throw new Error('User registration failed')
-    }
     return user
 }
 

@@ -1,49 +1,44 @@
 import type { Request, Response } from "express";
-import { issueService } from "./issue.service";
+import sendErrorResponse from "../../utils/sendErrorResponse";
+import sendResponse from "../../utils/sendResponse";
 import type { IssueQuery } from "./issue.interface";
+import { issueService } from "./issue.service";
 
 const createIssue = async (req: Request, res: Response): Promise<void> => {
     try {
         const { title, description, type } = req.body || {}
 
         if (!req.user) {
-            res.status(401).json({
-                success: false,
-                message: 'Unauthorized access',
-                errors: 'User information is missing from token'
-            })
+            sendErrorResponse(
+                res,
+                401,
+                'Unauthorized access',
+                'User information is missing from token'
+            )
             return
         }
 
         if (!title || !description || !type) {
-            res.status(400).json({
-                success: false,
-                message: 'Title, description and type are required'
-            })
+            sendErrorResponse(res, 400, 'Title, description and type are required')
             return
         }
 
         if (title.length > 150) {
-            res.status(400).json({
-                success: false,
-                message: 'Title must not exceed 150 characters'
-            })
+            sendErrorResponse(res, 400, 'Title must not exceed 150 characters')
             return
         }
 
         if (description.length < 20) {
-            res.status(400).json({
-                success: false,
-                message: 'Description must be at least 20 characters long'
-            })
+            sendErrorResponse(
+                res,
+                400,
+                'Description must be at least 20 characters long'
+            )
             return
         }
 
         if (type !== 'bug' && type !== 'feature_request') {
-            res.status(400).json({
-                success: false,
-                message: 'Type must be bug or feature_request'
-            })
+            sendErrorResponse(res, 400, 'Type must be bug or feature_request')
             return
         }
 
@@ -51,22 +46,24 @@ const createIssue = async (req: Request, res: Response): Promise<void> => {
             {
                 title,
                 description,
-                type
+                type,
             },
             req.user.id
         )
 
-        res.status(201).json({
+        sendResponse(res, {
+            statusCode: 201,
             success: true,
             message: 'Issue created successfully',
-            data: issue
+            data: issue,
         })
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Issue creation failed',
-            errors: error instanceof Error ? error.message : 'Unknown error'
-        })
+        sendErrorResponse(
+            res,
+            500,
+            'Issue creation failed',
+            error instanceof Error ? error.message : 'Unknown error'
+        )
     }
 }
 
@@ -82,18 +79,12 @@ const getAllIssues = async (req: Request, res: Response): Promise<void> => {
             typeof req.query.status === 'string' ? req.query.status : undefined
 
         if (sortValue && sortValue !== 'newest' && sortValue !== 'oldest') {
-            res.status(400).json({
-                success: false,
-                message: 'Sort must be newest or oldest'
-            })
+            sendErrorResponse(res, 400, 'Sort must be newest or oldest')
             return
         }
 
         if (typeValue && typeValue !== 'bug' && typeValue !== 'feature_request') {
-            res.status(400).json({
-                success: false,
-                message: 'Type must be bug or feature_request'
-            })
+            sendErrorResponse(res, 400, 'Type must be bug or feature_request')
             return
         }
 
@@ -103,10 +94,11 @@ const getAllIssues = async (req: Request, res: Response): Promise<void> => {
             statusValue !== 'in_progress' &&
             statusValue !== 'resolved'
         ) {
-            res.status(400).json({
-                success: false,
-                message: 'Status must be open, in_progress or resolved'
-            })
+            sendErrorResponse(
+                res,
+                400,
+                'Status must be open, in_progress or resolved'
+            )
             return
         }
 
@@ -130,16 +122,18 @@ const getAllIssues = async (req: Request, res: Response): Promise<void> => {
 
         const issues = await issueService.getAllIssuesFromDB(query)
 
-        res.status(200).json({
+        sendResponse(res, {
+            statusCode: 200,
             success: true,
             data: issues,
         })
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to retrieve issues',
-            errors: error instanceof Error ? error.message : 'Unknown error'
-        })
+        sendErrorResponse(
+            res,
+            500,
+            'Failed to retrieve issues',
+            error instanceof Error ? error.message : 'Unknown error'
+        )
     }
 }
 
@@ -148,33 +142,29 @@ const getSingleIssue = async (req: Request, res: Response): Promise<void> => {
         const issueId = Number(req.params.id)
 
         if (!Number.isInteger(issueId) || issueId <= 0) {
-            res.status(400).json({
-                success: false,
-                message: 'Issue id must be a valid positive number'
-            })
+            sendErrorResponse(res, 400, 'Issue id must be a valid positive number')
             return
         }
 
         const issue = await issueService.getSingleIssueFromDB(issueId)
 
         if (!issue) {
-            res.status(404).json({
-                success: false,
-                message: 'Issue not found'
-            })
+            sendErrorResponse(res, 404, 'Issue not found')
             return
         }
 
-        res.status(200).json({
+        sendResponse(res, {
+            statusCode: 200,
             success: true,
-            data: issue
+            data: issue,
         })
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to retrieve issue',
-            errors: error instanceof Error ? error.message : 'Unknown error'
-        })
+        sendErrorResponse(
+            res,
+            500,
+            'Failed to retrieve issue',
+            error instanceof Error ? error.message : 'Unknown error'
+        )
     }
 }
 
@@ -183,29 +173,24 @@ const updateIssue = async (req: Request, res: Response): Promise<void> => {
         const issueId = Number(req.params.id)
 
         if (!Number.isInteger(issueId) || issueId <= 0) {
-            res.status(400).json({
-                success: false,
-                message: 'Issue id must be a valid positive number',
-            })
+            sendErrorResponse(res, 400, 'Issue id must be a valid positive number')
             return
         }
 
         if (!req.user) {
-            res.status(401).json({
-                success: false,
-                message: 'Unauthorized access',
-                errors: 'User information is missing from token',
-            })
+            sendErrorResponse(
+                res,
+                401,
+                'Unauthorized access',
+                'User information is missing from token'
+            )
             return
         }
 
         const existingIssue = await issueService.getRawIssueByIdFromDB(issueId)
 
         if (!existingIssue) {
-            res.status(404).json({
-                success: false,
-                message: 'Issue not found',
-            })
+            sendErrorResponse(res, 404, 'Issue not found')
             return
         }
 
@@ -213,19 +198,21 @@ const updateIssue = async (req: Request, res: Response): Promise<void> => {
         const isOwnIssue = existingIssue.reporter_id === req.user.id
 
         if (!isMaintainer && !isOwnIssue) {
-            res.status(403).json({
-                success: false,
-                message: 'Forbidden access',
-                errors: 'You can only update your own issue'
-            })
+            sendErrorResponse(
+                res,
+                403,
+                'Forbidden access',
+                'You can only update your own issue'
+            )
             return
         }
 
         if (!isMaintainer && existingIssue.status !== 'open') {
-            res.status(409).json({
-                success: false,
-                message: 'Only open issues can be updated by contributor',
-            })
+            sendErrorResponse(
+                res,
+                409,
+                'Only open issues can be updated by contributor'
+            )
             return
         }
 
@@ -237,34 +224,26 @@ const updateIssue = async (req: Request, res: Response): Promise<void> => {
             type === undefined &&
             status === undefined
         ) {
-            res.status(400).json({
-                success: false,
-                message: 'At least one field is required for update'
-            })
+            sendErrorResponse(res, 400, 'At least one field is required for update')
             return
         }
 
         if (title !== undefined && title.length > 150) {
-            res.status(400).json({
-                success: false,
-                message: 'Title must not exceed 150 characters'
-            })
+            sendErrorResponse(res, 400, 'Title must not exceed 150 characters')
             return
         }
 
         if (description !== undefined && description.length < 20) {
-            res.status(400).json({
-                success: false,
-                message: 'Description must be at least 20 characters long',
-            })
+            sendErrorResponse(
+                res,
+                400,
+                'Description must be at least 20 characters long'
+            )
             return
         }
 
         if (type !== undefined && type !== 'bug' && type !== 'feature_request') {
-            res.status(400).json({
-                success: false,
-                message: 'Type must be bug or feature_request',
-            })
+            sendErrorResponse(res, 400, 'Type must be bug or feature_request')
             return
         }
 
@@ -274,19 +253,21 @@ const updateIssue = async (req: Request, res: Response): Promise<void> => {
             status !== 'in_progress' &&
             status !== 'resolved'
         ) {
-            res.status(400).json({
-                success: false,
-                message: 'Status must be open, in_progress or resolved'
-            })
+            sendErrorResponse(
+                res,
+                400,
+                'Status must be open, in_progress or resolved'
+            )
             return
         }
 
         if (!isMaintainer && status !== undefined) {
-            res.status(403).json({
-                success: false,
-                message: 'Forbidden access',
-                errors: 'Only maintainer can update issue status'
-            })
+            sendErrorResponse(
+                res,
+                403,
+                'Forbidden access',
+                'Only maintainer can update issue status'
+            )
             return
         }
 
@@ -297,17 +278,19 @@ const updateIssue = async (req: Request, res: Response): Promise<void> => {
             ...(status !== undefined && { status })
         })
 
-        res.status(200).json({
+        sendResponse(res, {
+            statusCode: 200,
             success: true,
             message: 'Issue updated successfully',
-            data: updatedIssue
+            data: updatedIssue,
         })
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Issue update failed',
-            errors: error instanceof Error ? error.message : 'Unknown error',
-        })
+        sendErrorResponse(
+            res,
+            500,
+            'Issue update failed',
+            error instanceof Error ? error.message : 'Unknown error'
+        )
     }
 }
 
@@ -316,33 +299,29 @@ const deleteIssue = async (req: Request, res: Response): Promise<void> => {
         const issueId = Number(req.params.id)
 
         if (!Number.isInteger(issueId) || issueId <= 0) {
-            res.status(400).json({
-                success: false,
-                message: 'Issue id must be a valid positive number'
-            })
+            sendErrorResponse(res, 400, 'Issue id must be a valid positive number')
             return
         }
 
-        const isDeleted = await issueService.deleteIssueFromDB(issueId);
+        const isDeleted = await issueService.deleteIssueFromDB(issueId)
 
         if (!isDeleted) {
-            res.status(404).json({
-                success: false,
-                message: 'Issue not found'
-            })
+            sendErrorResponse(res, 404, 'Issue not found')
             return
         }
 
-        res.status(200).json({
+        sendResponse(res, {
+            statusCode: 200,
             success: true,
-            message: 'Issue deleted successfully'
+            message: 'Issue deleted successfully',
         })
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Issue deletion failed',
-            errors: error instanceof Error ? error.message : 'Unknown error'
-        })
+        sendErrorResponse(
+            res,
+            500,
+            'Issue deletion failed',
+            error instanceof Error ? error.message : 'Unknown error'
+        )
     }
 }
 
@@ -350,17 +329,19 @@ const getIssueMetrics = async (req: Request, res: Response): Promise<void> => {
     try {
         const metrics = await issueService.getIssueMetricsFromDB()
 
-        res.status(200).json({
+        sendResponse(res, {
+            statusCode: 200,
             success: true,
             message: 'Issue metrics retrieved successfully',
             data: metrics,
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to retrieve issue metrics',
-            errors: error instanceof Error ? error.message : 'Unknown error',
         })
+    } catch (error) {
+        sendErrorResponse(
+            res,
+            500,
+            'Failed to retrieve issue metrics',
+            error instanceof Error ? error.message : 'Unknown error'
+        )
     }
 }
 
