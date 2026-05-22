@@ -17,3 +17,28 @@ export interface Issue {
     created_at: Date
     updated_at: Date
 }
+
+export interface Reporter {
+    id: number
+    name: string
+    role: 'contributor' | 'maintainer'
+}
+
+export interface IssueWithReporter {
+    id: number
+    title: string
+    description: string
+    type: IssueType
+    status: IssueStatus
+    reporter: Reporter
+    created_at: Date
+    updated_at: Date
+}
+
+export type IssueSort = 'newest' | 'oldest';
+
+export interface IssueQuery {
+    sort?: IssueSort
+    type?: IssueType
+    status?: IssueStatus
+}
