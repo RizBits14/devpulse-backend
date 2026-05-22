@@ -42,3 +42,10 @@ export interface IssueQuery {
     type?: IssueType
     status?: IssueStatus
 }
+
+export interface UpdateIssuePayload {
+    title?: string
+    description?: string
+    type?: IssueType
+    status?: IssueStatus
+}

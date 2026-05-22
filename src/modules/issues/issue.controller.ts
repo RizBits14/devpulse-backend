@@ -145,7 +145,7 @@ const getAllIssues = async (req: Request, res: Response): Promise<void> => {
 
 const getSingleIssue = async (req: Request, res: Response): Promise<void> => {
     try {
-        const issueId = Number(req.params.id);
+        const issueId = Number(req.params.id)
 
         if (!Number.isInteger(issueId) || issueId <= 0) {
             res.status(400).json({
@@ -168,14 +168,147 @@ const getSingleIssue = async (req: Request, res: Response): Promise<void> => {
         res.status(200).json({
             success: true,
             data: issue
-        });
+        })
     } catch (error) {
         res.status(500).json({
             success: false,
             message: 'Failed to retrieve issue',
             errors: error instanceof Error ? error.message : 'Unknown error'
-        });
+        })
     }
-};
+}
 
-export const issueController = { createIssue, getAllIssues, getSingleIssue }
+const updateIssue = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const issueId = Number(req.params.id)
+
+        if (!Number.isInteger(issueId) || issueId <= 0) {
+            res.status(400).json({
+                success: false,
+                message: 'Issue id must be a valid positive number',
+            })
+            return
+        }
+
+        if (!req.user) {
+            res.status(401).json({
+                success: false,
+                message: 'Unauthorized access',
+                errors: 'User information is missing from token',
+            })
+            return
+        }
+
+        const existingIssue = await issueService.getRawIssueByIdFromDB(issueId)
+
+        if (!existingIssue) {
+            res.status(404).json({
+                success: false,
+                message: 'Issue not found',
+            })
+            return
+        }
+
+        const isMaintainer = req.user.role === 'maintainer'
+        const isOwnIssue = existingIssue.reporter_id === req.user.id
+
+        if (!isMaintainer && !isOwnIssue) {
+            res.status(403).json({
+                success: false,
+                message: 'Forbidden access',
+                errors: 'You can only update your own issue'
+            })
+            return
+        }
+
+        if (!isMaintainer && existingIssue.status !== 'open') {
+            res.status(409).json({
+                success: false,
+                message: 'Only open issues can be updated by contributor',
+            })
+            return
+        }
+
+        const { title, description, type, status } = req.body || {}
+
+        if (
+            title === undefined &&
+            description === undefined &&
+            type === undefined &&
+            status === undefined
+        ) {
+            res.status(400).json({
+                success: false,
+                message: 'At least one field is required for update'
+            })
+            return
+        }
+
+        if (title !== undefined && title.length > 150) {
+            res.status(400).json({
+                success: false,
+                message: 'Title must not exceed 150 characters'
+            })
+            return
+        }
+
+        if (description !== undefined && description.length < 20) {
+            res.status(400).json({
+                success: false,
+                message: 'Description must be at least 20 characters long',
+            })
+            return
+        }
+
+        if (type !== undefined && type !== 'bug' && type !== 'feature_request') {
+            res.status(400).json({
+                success: false,
+                message: 'Type must be bug or feature_request',
+            })
+            return
+        }
+
+        if (
+            status !== undefined &&
+            status !== 'open' &&
+            status !== 'in_progress' &&
+            status !== 'resolved'
+        ) {
+            res.status(400).json({
+                success: false,
+                message: 'Status must be open, in_progress or resolved'
+            })
+            return
+        }
+
+        if (!isMaintainer && status !== undefined) {
+            res.status(403).json({
+                success: false,
+                message: 'Forbidden access',
+                errors: 'Only maintainer can update issue status'
+            })
+            return
+        }
+
+        const updatedIssue = await issueService.updateIssueIntoDB(issueId, {
+            ...(title !== undefined && { title }),
+            ...(description !== undefined && { description }),
+            ...(type !== undefined && { type }),
+            ...(status !== undefined && { status })
+        })
+
+        res.status(200).json({
+            success: true,
+            message: 'Issue updated successfully',
+            data: updatedIssue
+        })
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Issue update failed',
+            errors: error instanceof Error ? error.message : 'Unknown error',
+        })
+    }
+}
+
+export const issueController = { createIssue, getAllIssues, getSingleIssue, updateIssue }

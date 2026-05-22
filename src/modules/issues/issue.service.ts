@@ -1,5 +1,5 @@
 import { pool } from "../../db";
-import type { CreateIssuePayload, Issue, IssueQuery, IssueWithReporter, Reporter } from "./issue.interface";
+import type { CreateIssuePayload, Issue, IssueQuery, IssueWithReporter, Reporter, UpdateIssuePayload } from "./issue.interface";
 
 const createIssueIntoDB = async (payload: CreateIssuePayload, reporterId: number): Promise<Issue> => {
     const { title, description, type } = payload
@@ -127,7 +127,62 @@ const getSingleIssueFromDB = async (
         reporter,
         created_at: issue.created_at,
         updated_at: issue.updated_at,
-    };
-};
+    }
+}
 
-export const issueService = { createIssueIntoDB, getAllIssuesFromDB, getSingleIssueFromDB }
+const getRawIssueByIdFromDB = async (issueId: number): Promise<Issue | null> => {
+    const result = await pool.query<Issue>(`
+        SELECT id, title, description, type, status, reporter_id, created_at, updated_at
+        FROM issues
+        WHERE id = $1
+        `, [issueId])
+
+    return result.rows[0] || null
+}
+
+const updateIssueIntoDB = async (
+    issueId: number,
+    payload: UpdateIssuePayload
+): Promise<Issue> => {
+    const fields: string[] = []
+    const values: unknown[] = []
+
+    if (payload.title !== undefined) {
+        values.push(payload.title);
+        fields.push(`title = $${values.length}`)
+    }
+
+    if (payload.description !== undefined) {
+        values.push(payload.description);
+        fields.push(`description = $${values.length}`)
+    }
+
+    if (payload.type !== undefined) {
+        values.push(payload.type);
+        fields.push(`type = $${values.length}`)
+    }
+
+    if (payload.status !== undefined) {
+        values.push(payload.status);
+        fields.push(`status = $${values.length}`)
+    }
+
+    values.push(issueId);
+
+    const result = await pool.query<Issue>(`
+        UPDATE issues
+        SET ${fields.join(", ")}, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $${values.length}
+        RETURNING id, title, description, type, status, reporter_id, created_at, updated_at
+        `, values)
+
+    const issue = result.rows[0];
+
+    if (!issue) {
+        throw new Error('Issue update failed');
+    }
+
+    return issue;
+}
+
+export const issueService = { createIssueIntoDB, getAllIssuesFromDB, getSingleIssueFromDB, getRawIssueByIdFromDB, updateIssueIntoDB }
