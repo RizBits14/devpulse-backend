@@ -1,20 +1,26 @@
 {
   "name": "devpulse-backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Backend API for DevPulse, an internal issue and feature tracking system built with Express, TypeScript, PostgreSQL, and JWT authentication.",
+  "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch ./src/server.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsup",
+    "start": "node ./dist/server.js"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/RizBits14/devpulse-backend.git"
   },
-  "keywords": [],
+  "keywords": [
+    "express",
+    "typescript",
+    "postgresql",
+    "jwt",
+    "issue-tracker"
+  ],
   "author": "",
   "license": "ISC",
-  "type": "module",
   "bugs": {
     "url": "https://github.com/RizBits14/devpulse-backend/issues"
   },
@@ -24,6 +30,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^24.0.0",
     "@types/pg": "^8.20.0",
     "tsx": "^4.22.3",
     "typescript": "^6.0.3"
@@ -34,6 +41,7 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
-    "pg": "^8.21.0"
+    "pg": "^8.21.0",
+    "tsup": "^8.5.1"
   }
 }
