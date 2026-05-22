@@ -1,7 +1,16 @@
-import app from "./app";
+import app from "./app"
+import { config } from "./config"
+import { initDB } from "./db"
 
-const port = 5000
+const main = async () => {
+    try {
+        await initDB()
+        app.listen(config.port, () => {
+            console.log(`Devpulse server is running on port ${config.port}`)
+        })
+    } catch (error) {
+        console.log(error)
+    }
+}
 
-app.listen(port, () => {
-    console.log(`DevPulse server is running on port ${port}`)
-});
+main()
