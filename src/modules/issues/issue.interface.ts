@@ -49,3 +49,12 @@ export interface UpdateIssuePayload {
     type?: IssueType
     status?: IssueStatus
 }
+
+export interface IssueMetrics {
+    total_issues: number
+    open_issues: number
+    in_progress_issues: number
+    resolved_issues: number
+    bug_issues: number
+    feature_request_issues: number
+}

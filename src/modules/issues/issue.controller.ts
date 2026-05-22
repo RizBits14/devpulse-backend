@@ -346,4 +346,22 @@ const deleteIssue = async (req: Request, res: Response): Promise<void> => {
     }
 }
 
-export const issueController = { createIssue, getAllIssues, getSingleIssue, updateIssue, deleteIssue }
+const getIssueMetrics = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const metrics = await issueService.getIssueMetricsFromDB()
+
+        res.status(200).json({
+            success: true,
+            message: 'Issue metrics retrieved successfully',
+            data: metrics,
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to retrieve issue metrics',
+            errors: error instanceof Error ? error.message : 'Unknown error',
+        })
+    }
+}
+
+export const issueController = { createIssue, getAllIssues, getSingleIssue, updateIssue, deleteIssue, getIssueMetrics }

@@ -1,5 +1,5 @@
 import { pool } from "../../db";
-import type { CreateIssuePayload, Issue, IssueQuery, IssueWithReporter, Reporter, UpdateIssuePayload } from "./issue.interface";
+import type { CreateIssuePayload, Issue, IssueQuery, IssueWithReporter, Reporter, UpdateIssuePayload, IssueMetrics } from "./issue.interface";
 
 const createIssueIntoDB = async (payload: CreateIssuePayload, reporterId: number): Promise<Issue> => {
     const { title, description, type } = payload
@@ -195,4 +195,24 @@ const deleteIssueFromDB = async (issueId: number): Promise<boolean> => {
     return (result.rowCount ?? 0) > 0;
 };
 
-export const issueService = { createIssueIntoDB, getAllIssuesFromDB, getSingleIssueFromDB, getRawIssueByIdFromDB, updateIssueIntoDB, deleteIssueFromDB }
+const getIssueMetricsFromDB = async (): Promise<IssueMetrics> => {
+    const result = await pool.query<IssueMetrics>(`
+        SELECT
+            COUNT(*)::int AS total_issues,
+            COUNT(*) FILTER (WHERE status = 'open')::int AS open_issues,
+            COUNT(*) FILTER (WHERE status = 'in_progress')::int AS in_progress_issues,
+            COUNT(*) FILTER (WHERE status = 'resolved')::int AS resolved_issues,
+            COUNT(*) FILTER (WHERE type = 'bug')::int AS bug_issues,
+            COUNT(*) FILTER (WHERE type = 'feature_request')::int AS feature_request_issues
+        FROM issues `)
+
+    const metrics = result.rows[0]
+
+    if (!metrics) {
+        throw new Error('Failed to load issue metrics')
+    }
+
+    return metrics
+};
+
+export const issueService = { createIssueIntoDB, getAllIssuesFromDB, getSingleIssueFromDB, getRawIssueByIdFromDB, updateIssueIntoDB, deleteIssueFromDB, getIssueMetricsFromDB }
